@@ -13,9 +13,13 @@ namespace MPApp.Console
                 
                 .BuildServiceProvider();
 
-            //var repo = serviceProvider.GetService<IRepository>();
-            //repo.GetPaymentData();
+            var repo = serviceProvider.GetService<IRepository>();
 
+            var calc = new FeeCalculator(repo);
+
+            calc.PrintFees();
+
+            System.Console.Read();
         }
     }
 }

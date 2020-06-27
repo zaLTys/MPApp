@@ -1,18 +1,18 @@
 ﻿using System;
 
-namespace MPApp.Core
+namespace MPApp.Core.Models
 {
-    public class Payment
+    public class Fee
     {
         public DateTime Date { get; set; }
         public string MerchantName { get; set; }
-        public decimal Fee { get; set; }
+        public decimal Amount { get; set; }
 
-        public Payment(DateTime date, string merchantName, decimal fee)
+        public Fee(DateTime date, string merchantName, decimal amount)
         {
             Date = date;
             MerchantName = merchantName;
-            Fee = fee;
+            Amount = amount;
         }
     }
 }
