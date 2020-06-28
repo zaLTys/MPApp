@@ -33,7 +33,7 @@ namespace MPApp.tests
         public void RetrieveDataFromFile(string dateString, string merchantName, decimal paymentAmount)
         {
             var sut = new FeeCalculator(new TextRepository());
-            var result = sut.LoadData().Result.ToList();
+            var result = sut.LoadPaymentData("transactions").Result.ToList();
             Assert.True(result.Exists(x => x.Date == Convert.ToDateTime(dateString) && x.Amount == paymentAmount && x.MerchantName == merchantName));
 
             var payment = result.Single(x => x.Date == Convert.ToDateTime(dateString) && x.Amount == paymentAmount && x.MerchantName == merchantName);
@@ -64,48 +64,65 @@ namespace MPApp.tests
         public void ApplyPercentageDiscount(string dateString, string merchantName, decimal paymentAmount, decimal expectedFeeAmount)
         {
             var sut = new FeeCalculator(new TextRepository());
-            var ruleSet = new FeeRuleSet("CIRCLE_K", 20, 0);
+            var ruleSet = new RuleSet("CIRCLE_K", 20, 0,1);
 
             var paymentDate = Convert.ToDateTime(dateString);
             var payment = new Payment(paymentDate, merchantName, paymentAmount);
-            var fee = sut.CalculateFeeFromPayment(payment, ruleSet);
+            var processedPayment = sut.CalculateFeeFromPayment(payment, ruleSet, false);
 
-            AssertFeeFields(dateString, merchantName, expectedFeeAmount, fee);
+            AssertFeeFields(dateString, merchantName, paymentAmount, expectedFeeAmount, processedPayment);
         }
 
-        //[Theory]
-        //[InlineData("2018-09-02", "7-ELEVEN", 120, 30.20)]
-        //[InlineData("2018-09-04", "NETTO", 200, 31.00)]
-        //[InlineData("2018-10-22", "7-ELEVEN", 300, 32.00)]
-        //[InlineData("2018-10-29", "7-ELEVEN", 150, 1.50)]
-        [Fact]
-        public void ApplyFixedFee()//string dateString, string merchantName, decimal paymentAmount, decimal expectedFeeAmount)
+        [Theory]
+        [InlineData("2018-09-02", "7-ELEVEN", 120, 30.20)]
+        [InlineData("2018-09-04", "NETTO", 200, 31.00)]
+        [InlineData("2018-10-22", "7-ELEVEN", 300, 32.00)]
+        [InlineData("2018-10-29", "7-ELEVEN", 150, 1.50)]
+        //[Fact]
+        public async Task ApplyFixedFee(string dateString, string merchantName, decimal paymentAmount, decimal expectedFeeAmount)
+        {
+            PrepareTestData();
+
+            var sut = new FeeCalculator(_repositoryMock.Object);
+
+            var result = await sut.ProcessPayments("testData","rules");
+            
+            Assert.Equal(4, result.Count);
+            var paymentToCheck = result.SingleOrDefault(x => x.Date.ToString("yyyy-MM-dd") == dateString
+                                                   && x.MerchantName == merchantName && x.Amount == paymentAmount);
+            Assert.NotNull(paymentToCheck);
+            Assert.Equal(dateString, paymentToCheck.Date.ToString("yyyy-MM-dd"));
+            Assert.Equal(merchantName, paymentToCheck.MerchantName);
+            Assert.Equal(paymentAmount, paymentToCheck.Amount);
+            Assert.Equal(expectedFeeAmount, paymentToCheck.Fee);
+
+        }
+
+        private void PrepareTestData()
         {
             var testData = new List<Payment>()
             {
                 new Payment(Convert.ToDateTime("2018-09-02"), "7-ELEVEN", 120),
-                new Payment(Convert.ToDateTime("2018-09-04"), "NETTO", 120),
-                new Payment(Convert.ToDateTime("2018-10-22"), "7-ELEVEN", 120),
-                new Payment(Convert.ToDateTime("2018-10-29"), "7-ELEVEN", 120)
+                new Payment(Convert.ToDateTime("2018-09-04"), "NETTO", 200),
+                new Payment(Convert.ToDateTime("2018-10-22"), "7-ELEVEN", 300),
+                new Payment(Convert.ToDateTime("2018-10-29"), "7-ELEVEN", 150)
             };
-            _repositoryMock.Setup(x => x.GetPaymentDataAsync()).Returns(Task.FromResult(testData));
-
-            var sut = new FeeCalculator(_repositoryMock.Object);
-
-            sut.AddRuleSet("7-ELEVEN", 0, 29);
-            sut.AddRuleSet("NETTO", 0, 29);
-
-            var result = sut.PrintFees().Result;
-
-            
+            var testRules = new List<RuleSet>()
+            {
+                new RuleSet("7-ELEVEN", 0, 29, 1),
+                new RuleSet("NETTO", 0, 29, 1)
+            };
+            _repositoryMock.Setup(x => x.GetPaymentDataAsync("testData")).Returns(Task.FromResult(testData));
+            _repositoryMock.Setup(x => x.GetRulesAsync("rules")).Returns(Task.FromResult(testRules));
         }
 
 
-        private static void AssertFeeFields(string dateString, string merchantName, decimal expectedFeeAmount, Fee fee)
+        private static void AssertFeeFields(string dateString, string merchantName, decimal paymentAmount, decimal expectedFeeAmount, ProcessedPayment processedPayment)
         {
-            Assert.Equal(dateString, fee.Date.ToString("yyyy-MM-dd"));
-            Assert.Equal(merchantName, fee.MerchantName);
-            Assert.Equal(expectedFeeAmount, fee.Amount);
+            Assert.Equal(dateString, processedPayment.Date.ToString("yyyy-MM-dd"));
+            Assert.Equal(merchantName, processedPayment.MerchantName);
+            Assert.Equal(paymentAmount, processedPayment.Amount);
+            Assert.Equal(expectedFeeAmount, processedPayment.Fee);
         }
 
         private static void AssertPaymentFields(string dateString, string merchantName, decimal fee, Payment payment)

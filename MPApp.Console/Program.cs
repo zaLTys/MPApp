@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using MPApp.Core;
 
@@ -6,7 +7,7 @@ namespace MPApp.Console
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var serviceProvider = new ServiceCollection()
                 .AddTransient<IRepository, TextRepository>()
@@ -17,7 +18,7 @@ namespace MPApp.Console
 
             var calc = new FeeCalculator(repo);
 
-            calc.PrintFees();
+            await calc.ProcessPayments("testData", "rules");
 
             System.Console.Read();
         }

@@ -15,4 +15,13 @@ namespace MPApp.Core.Models
             Amount = amount;
         }
     }
+
+    public class ProcessedPayment : Payment
+    {
+        public decimal Fee { get; set; }
+        public ProcessedPayment(Payment payment, decimal fee) : base(payment.Date, payment.MerchantName, payment.Amount)
+        {
+            Fee = fee;
+        }
+    }
 }
