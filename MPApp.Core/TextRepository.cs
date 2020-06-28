@@ -19,16 +19,13 @@ namespace MPApp.Core
             return Task.Run(() => GetRules(fileName)).Result.ToList();
         }
 
-        private IEnumerable<Payment> GetPaymentData(string fileName)
+        public IEnumerable<Payment> GetPaymentData(string fileName)
         {
-            string line;
-            List<Payment> payments = new List<Payment>();
-
             System.IO.StreamReader sr =
                 new System.IO.StreamReader($@"c:\{fileName}.txt");
             while (!sr.EndOfStream)
             {
-                line = sr.ReadLine();
+                var line = sr.ReadLine();
                 if (!String.IsNullOrWhiteSpace(line))
                 {
                     string[] data = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -53,7 +50,7 @@ namespace MPApp.Core
                 if (!String.IsNullOrWhiteSpace(line))
                 {
                     string[] data = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                    yield return new RuleSet(data[0], Convert.ToDecimal(data[1]), Convert.ToDecimal(data[2]));
+                    yield return new RuleSet(data[0], Convert.ToDecimal(data[1]), Convert.ToDecimal(data[2]), Convert.ToDecimal(data[3]));
                 }
             }
 

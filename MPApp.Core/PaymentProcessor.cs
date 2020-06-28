@@ -7,19 +7,19 @@ using MPApp.Core.Models;
 
 namespace MPApp.Core
 {
-    public class FeeCalculator
+    public class PaymentProcessor
     {
         private readonly IRepository _repository;
         private List<RuleSet> _feeRules;
 
-        public FeeCalculator(IRepository repository)
+        public PaymentProcessor(IRepository repository)
         {
             _repository = repository;
             _feeRules = new List<RuleSet>();
         }
-        public async Task<IEnumerable<Payment>> LoadPaymentData(string fileName)
+        public IEnumerable<Payment> LoadPaymentData(string fileName)
         {
-            return await _repository.GetPaymentDataAsync(fileName);
+            return _repository.GetPaymentData(fileName);
         }
         public async Task<IEnumerable<RuleSet>> LoadRules(string fileName)
         {
@@ -28,10 +28,10 @@ namespace MPApp.Core
 
         public async Task<List<ProcessedPayment>> ProcessPayments(string paymentsFileName, string rulesFileName)
         {
-            var payments = await LoadPaymentData(paymentsFileName);
-            var rules = await LoadRules(rulesFileName);
-            _feeRules = rules.ToList();
+            var payments = LoadPaymentData(paymentsFileName);
             
+            _feeRules = LoadRules(rulesFileName).Result.ToList();
+
             var processedPayments = new List<ProcessedPayment>();
             foreach (var payment in payments)
             {
@@ -49,7 +49,7 @@ namespace MPApp.Core
 
         private static void PrintProcessedPaymentFee(ProcessedPayment payment)
         {
-            Console.WriteLine($"{payment.Date:yyyy-MM-dd} {payment.MerchantName} {payment.Fee}");
+            Console.WriteLine($"{payment.Date:yyyy-MM-dd} {payment.MerchantName} {String.Format("{0:0.00}", payment.Fee)}");
         }
 
         public void AddRuleSet(string merchantName, decimal feePercentageDiscount, decimal fixedFee)
@@ -65,7 +65,11 @@ namespace MPApp.Core
 
         public ProcessedPayment CalculateFeeFromPayment(Payment payment, RuleSet ruleSet, bool firstPaymentOfMonthProcessed)
         {
-            if (ruleSet == null) return new ProcessedPayment(payment, 0);
+            if (ruleSet == null)
+            {
+                var defaultFee = ApplyDefaultFee(payment, 1);
+                return new ProcessedPayment(payment, defaultFee);
+            }
             var fee = ApplyDefaultFee(payment, ruleSet.DefaultFeePercentageRate);
             
             fee = ApplyPercentageDiscount(ruleSet.FeePercentageDiscount, fee);

@@ -7,6 +7,7 @@ namespace MPApp.Core
     public interface IRepository
     {
         public Task<List<Payment>> GetPaymentDataAsync(string fileName);
+        public IEnumerable<Payment> GetPaymentData(string fileName);
         public Task<List<RuleSet>> GetRulesAsync(string fileName);
     }
 }

@@ -16,9 +16,17 @@ namespace MPApp.Console
 
             var repo = serviceProvider.GetService<IRepository>();
 
-            var calc = new FeeCalculator(repo);
+            var calc = new PaymentProcessor(repo);
 
-            await calc.ProcessPayments("testData", "rules");
+            System.Console.WriteLine("Enter name of payments data file, leave blank for default value");
+            var paymentsFileName =  System.Console.ReadLine();
+            if (String.IsNullOrEmpty(paymentsFileName))
+                paymentsFileName = "testData";
+            System.Console.WriteLine("Enter name of fee rules data file, leave blank for default value");
+            var rulesFileName = System.Console.ReadLine();
+            if (String.IsNullOrEmpty(rulesFileName))
+                rulesFileName = "rules";
+            await calc.ProcessPayments(paymentsFileName, rulesFileName);
 
             System.Console.Read();
         }

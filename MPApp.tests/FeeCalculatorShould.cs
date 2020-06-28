@@ -32,8 +32,8 @@ namespace MPApp.tests
         [InlineData("2018-09-30", "CIRCLE_K", 100)]
         public void RetrieveDataFromFile(string dateString, string merchantName, decimal paymentAmount)
         {
-            var sut = new FeeCalculator(new TextRepository());
-            var result = sut.LoadPaymentData("transactions").Result.ToList();
+            var sut = new PaymentProcessor(new TextRepository());
+            var result = sut.LoadPaymentData("transactions").ToList();
             Assert.True(result.Exists(x => x.Date == Convert.ToDateTime(dateString) && x.Amount == paymentAmount && x.MerchantName == merchantName));
 
             var payment = result.Single(x => x.Date == Convert.ToDateTime(dateString) && x.Amount == paymentAmount && x.MerchantName == merchantName);
@@ -43,7 +43,7 @@ namespace MPApp.tests
         [Fact]
         public void AddAndRetrieveRuleSet()
         {
-            var sut = new FeeCalculator(new TextRepository());
+            var sut = new PaymentProcessor(new TextRepository());
             sut.AddRuleSet("CIRCLE_K", 15, 5);
 
             var rules = sut.GetRules();
@@ -63,7 +63,7 @@ namespace MPApp.tests
         [InlineData("2018-09-30", "CIRCLE_K", 150, 1.2)]
         public void ApplyPercentageDiscount(string dateString, string merchantName, decimal paymentAmount, decimal expectedFeeAmount)
         {
-            var sut = new FeeCalculator(new TextRepository());
+            var sut = new PaymentProcessor(new TextRepository());
             var ruleSet = new RuleSet("CIRCLE_K", 20, 0,1);
 
             var paymentDate = Convert.ToDateTime(dateString);
@@ -83,7 +83,7 @@ namespace MPApp.tests
         {
             PrepareTestData();
 
-            var sut = new FeeCalculator(_repositoryMock.Object);
+            var sut = new PaymentProcessor(_repositoryMock.Object);
 
             var result = await sut.ProcessPayments("testData","rules");
             
@@ -113,6 +113,7 @@ namespace MPApp.tests
                 new RuleSet("NETTO", 0, 29, 1)
             };
             _repositoryMock.Setup(x => x.GetPaymentDataAsync("testData")).Returns(Task.FromResult(testData));
+            _repositoryMock.Setup(x => x.GetPaymentData("testData")).Returns(testData);
             _repositoryMock.Setup(x => x.GetRulesAsync("rules")).Returns(Task.FromResult(testRules));
         }
 
